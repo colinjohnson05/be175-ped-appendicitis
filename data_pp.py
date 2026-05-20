@@ -1,6 +1,6 @@
 import pandas as pd
 from pandas import DataFrame
-
+from assign_classes import assign_classes
 
 def appendicitis_pp(filepath: str) -> DataFrame:
     """
@@ -8,7 +8,7 @@ def appendicitis_pp(filepath: str) -> DataFrame:
     :param filepath: Absolute or relative path to the raw Excel data file (.xlsx). Data must be in the first sheet with columns matching the expected variable names from the Data Summary sheet.
     :return data: Preprocessed dataframe ready for train/test splitting.
 
-    Preprocesses the pediatric appendicitis dataset for use in binary classification models predicting appendicitis diagnosis and surgical management. See ``class-balancing-np.ipynb`` for interactive notebook code.
+    Preprocesses the pediatric appendicitis dataset for use in binary classification models predicting appendicitis diagnosis. See ``class-balancing-np.ipynb`` for interactive notebook code.
     """
 
     # Load in data set
@@ -24,7 +24,7 @@ def appendicitis_pp(filepath: str) -> DataFrame:
     data = data.drop(['US_Number', 'US_Performed'], axis=1)
 
     # Drop retrospective variables
-    data = data.drop(['Length_of_Stay', 'Management', 'Severity', 'Diagnosis_Presumptive'], axis=1)
+    data = data.drop(['Length_of_Stay', 'Management', 'Severity'], axis=1)
 
     # Segmented_Neutrophils is pretty sparsely populated, redundant with neutrophil percent
     data = data.drop(['Segmented_Neutrophils'], axis=1)
@@ -221,6 +221,9 @@ def appendicitis_pp(filepath: str) -> DataFrame:
     }
 
     data['Diagnosis'] = data['Diagnosis'].map(diagnosis_map)
+
+    # Break into classes
+    data = assign_classes(data)
 
     # Check that there are no NaN type in diagnosis, check that all non-NaN are numerical
 
