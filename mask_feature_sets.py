@@ -49,7 +49,7 @@ if __name__ == '__main__':
     descriptors = pd.read_excel(xlsx, 1)
     X = appendicitis_pp('data/app_data.xlsx')
 
-    X_clinical, X_lab, X_us = mask_input_variables(X, descriptors)
+    X_clinical, X_lab, X_us = mask_feature_sets(X, descriptors)
 
     print(X_clinical.columns)
     print(X_lab.columns)
