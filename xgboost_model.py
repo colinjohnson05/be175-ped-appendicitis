@@ -47,8 +47,66 @@ def specificity_score(y_true, y_pred):
     tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels=[0, 1]).ravel()
     return tn / (tn + fp)
 
+def train_xgboost_baseline(data_path, test_size=0.2, random_state=42):
+    data = appendicitis_pp(data_path)
 
-def train_xgboost_baseline(X_train, X_test, y_train, y_test, random_state:int = 42):
+    feature_columns = [
+        column for column in data.columns if column not in NON_FEATURE_COLUMNS
+    ]
+    X = data[feature_columns]
+    y = data["Diagnosis"]
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
+        test_size=test_size,
+        random_state=random_state,
+        stratify=y,
+    )
+
+    negative_count = (y_train == 0).sum()
+    positive_count = (y_train == 1).sum()
+    scale_pos_weight = negative_count / positive_count
+
+    model = XGBClassifier(
+        n_estimators=200,
+        max_depth=3,
+        learning_rate=0.05,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        objective="binary:logistic",
+        eval_metric="logloss",
+        scale_pos_weight=scale_pos_weight,
+        random_state=random_state,
+    )
+
+    model.fit(X_train, y_train)
+
+    y_pred = model.predict(X_test)
+    y_prob = model.predict_proba(X_test)[:, 1]
+
+    metrics = {
+        "n_total": len(data),
+        "n_train": len(X_train),
+        "n_test": len(X_test),
+        "accuracy": accuracy_score(y_test, y_pred),
+        "specificity": specificity_score(y_test, y_pred),
+        "roc_auc": roc_auc_score(y_test, y_prob),
+        "confusion_matrix": confusion_matrix(y_test, y_pred, labels=[0, 1]),
+        "classification_report": classification_report(
+            y_test,
+            y_pred,
+            target_names=["No appendicitis", "Appendicitis"],
+        ),
+        "feature_importance": pd.Series(
+            model.feature_importances_,
+            index=feature_columns,
+        ).sort_values(ascending=False),
+    }
+
+    return model, metrics
+
+def train_xgboost(X_train, X_test, y_train, y_test, random_state:int = 42):
     """
 Trains XGBoost model on ``data`` using cross validation method ``cv``.
     :param X_train: Pandas dataframe containing data being used to train XGBoost model.
@@ -160,6 +218,6 @@ if __name__ == "__main__":
     X = data.drop(columns=['Class', 'Diagnosis', 'Diagnosis_Presumptive'])
     y = data['Diagnosis']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=args.test_size, random_state=args.random_state)
-    model, baseline_metrics, y_prob = train_xgboost_baseline(X_train, X_test, y_train, y_test, random_state=args.random_state)
+    model, baseline_metrics, y_prob = train_xgboost(X_train, X_test, y_train, y_test, random_state=args.random_state)
     print_metrics(baseline_metrics)
     print(y_prob)
