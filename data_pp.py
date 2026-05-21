@@ -155,7 +155,7 @@ def appendicitis_pp(filepath: str) -> DataFrame:
         'male': 1,
     }
     data['Sex'] = data['Sex'].map(sex_map)
-    data = data.dropna(subset=['Sex'])  # only drops 1 observation
+    data = data.dropna(subset=['Sex'])
 
     # Ketones
     ketone_map = {

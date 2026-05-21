@@ -48,26 +48,23 @@ def specificity_score(y_true, y_pred):
     return tn / (tn + fp)
 
 
-def train_xgboost_baseline(data_path, test_size=0.2, random_state=42):
-    data = appendicitis_pp(data_path)
+def train_xgboost_baseline(X_train, X_test, y_train, y_test, random_state:int = 42):
+    """
+Trains XGBoost model on ``data`` using cross validation method ``cv``.
+    :param X_train: Pandas dataframe containing data being used to train XGBoost model.
+    :param X_test: Pandas dataframe containing test or validation dataset
+    :param y_train: Pandas dataframe containing labels for training data.
+    :param y_test: Pandas dataframe containing labels for testing or validation data.
+    :param random_state: Random state to ensure reproducibility
+    :return: Model and metrics
+    """
 
-    feature_columns = [
-        column for column in data.columns if column not in NON_FEATURE_COLUMNS
-    ]
-    X = data[feature_columns]
-    y = data["Diagnosis"]
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=test_size,
-        random_state=random_state,
-        stratify=y,
-    )
-
+    # Calculate positive:negative ratio for gradient scaling in xgboost
     negative_count = (y_train == 0).sum()
     positive_count = (y_train == 1).sum()
     scale_pos_weight = negative_count / positive_count
+
+    feature_columns = X_train.columns.tolist()
 
     model = XGBClassifier(
         n_estimators=200,
@@ -105,7 +102,7 @@ def train_xgboost_baseline(data_path, test_size=0.2, random_state=42):
         ).sort_values(ascending=False),
     }
 
-    return model, metrics
+    return model, metrics, y_prob
 
 
 def print_metrics(metrics, top_n_features=15):
@@ -158,9 +155,11 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    _, baseline_metrics = train_xgboost_baseline(
-        data_path=resolve_data_path(args.data),
-        test_size=args.test_size,
-        random_state=args.random_state,
-    )
+    data = appendicitis_pp(resolve_data_path(args.data))
+    # split 0.8 train 0.2 test just to make sure code runs
+    X = data.drop(columns=['Class', 'Diagnosis', 'Diagnosis_Presumptive'])
+    y = data['Diagnosis']
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=args.test_size, random_state=args.random_state)
+    model, baseline_metrics, y_prob = train_xgboost_baseline(X_train, X_test, y_train, y_test, random_state=args.random_state)
     print_metrics(baseline_metrics)
+    print(y_prob)
