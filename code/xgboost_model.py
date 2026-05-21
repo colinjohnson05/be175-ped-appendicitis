@@ -47,6 +47,7 @@ def specificity_score(y_true, y_pred):
     tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels=[0, 1]).ravel()
     return tn / (tn + fp)
 
+
 def train_xgboost_baseline(data_path, test_size=0.2, random_state=42):
     data = appendicitis_pp(data_path)
 
@@ -106,6 +107,7 @@ def train_xgboost_baseline(data_path, test_size=0.2, random_state=42):
 
     return model, metrics
 
+
 def train_xgboost(X_train, X_test, y_train, y_test, random_state:int = 42):
     """
 Trains XGBoost model on ``data`` using cross validation method ``cv``.
@@ -114,7 +116,7 @@ Trains XGBoost model on ``data`` using cross validation method ``cv``.
     :param y_train: Pandas dataframe containing labels for training data.
     :param y_test: Pandas dataframe containing labels for testing or validation data.
     :param random_state: Random state to ensure reproducibility
-    :return: Model and metrics
+    :return: Model, metrics, and probabilites of appendicitis for test data
     """
 
     # Calculate positive:negative ratio for gradient scaling in xgboost

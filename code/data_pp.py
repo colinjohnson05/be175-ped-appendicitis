@@ -1,12 +1,15 @@
 import pandas as pd
 from pandas import DataFrame
 from assign_classes import assign_classes
+from pathlib import Path
 
-def appendicitis_pp(filepath: str) -> DataFrame:
+def appendicitis_pp(filepath:Path, save=False):
     """
 
     :param filepath: Absolute or relative path to the raw Excel data file (.xlsx). Data must be in the first sheet with columns matching the expected variable names from the Data Summary sheet.
+    :param save: Dictates whether to save preprocessed data as new excel file or not. Keep as ``false`` when using notebooks
     :return data: Preprocessed dataframe ready for train/test splitting.
+    :return descriptors: Dataframe containing preprocessed descriptors sheet.
 
     Preprocesses the pediatric appendicitis dataset for use in binary classification models predicting appendicitis diagnosis. See ``class-balancing-np.ipynb`` for interactive notebook code.
     """
@@ -14,6 +17,7 @@ def appendicitis_pp(filepath: str) -> DataFrame:
     # Load in data set
     xlsx = pd.ExcelFile(filepath)
     raw_data = pd.read_excel(xlsx, 0)
+    descriptors = pd.read_excel(xlsx, 1)
 
     # Filter out observations missing labels
     data = raw_data.dropna(subset=['Diagnosis'])
@@ -241,10 +245,20 @@ def appendicitis_pp(filepath: str) -> DataFrame:
     # Run tests
     test_all_non_nan_values_numeric(data)
 
+    if descriptors['Variable Group'].isna().any():
+        descriptors['Variable Group'] = descriptors['Variable Group'].ffill()
+
     print('Preprocessing Done')
 
-    return data
+    # Save pre-processed dataframe to excel file
+    if save:
+        data.to_excel('../code/app_data_pp.xlsx', index=False)
+
+    return data, descriptors
 
 if __name__ == '__main__':
-    data = appendicitis_pp('data/app_data.xlsx')
+    base_dir = Path(__file__).parent
+    data_path = (BASE_DIR / '..' / 'data' / 'app_data.xlsx').resolve()
+
+    data, descriptors = appendicitis_pp(data_path)
     print(data.head())

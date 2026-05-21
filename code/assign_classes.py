@@ -45,7 +45,7 @@ def assign_classes(data: pd.DataFrame):
 if __name__ == '__main__':
     from data_pp import appendicitis_pp
     # appendicitis_pp uses assign_classes
-    data = appendicitis_pp('data/app_data.xlsx')
+    data = appendicitis_pp('../data/app_data.xlsx')
     print(data['Diagnosis_Presumptive'])
     print(data['Diagnosis'])
     print(data['Class'])

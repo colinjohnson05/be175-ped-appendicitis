@@ -45,9 +45,9 @@ def mask_feature_sets(X_data: pd.DataFrame, descriptors: pd.DataFrame):
 
 # Usage
 if __name__ == '__main__':
-    xlsx = pd.ExcelFile('data/app_data.xlsx')
+    xlsx = pd.ExcelFile('../data/app_data.xlsx')
     descriptors = pd.read_excel(xlsx, 1)
-    X = appendicitis_pp('data/app_data.xlsx')
+    X = appendicitis_pp('../data/app_data.xlsx')
 
     X_clinical, X_lab, X_us = mask_feature_sets(X, descriptors)
 
