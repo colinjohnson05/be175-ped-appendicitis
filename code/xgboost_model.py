@@ -144,7 +144,6 @@ Trains XGBoost model on ``data`` using cross validation method ``cv``.
     y_prob = model.predict_proba(X_test)[:, 1]
 
     metrics = {
-        "n_total": len(data),
         "n_train": len(X_train),
         "n_test": len(X_test),
         "accuracy": accuracy_score(y_test, y_pred),
@@ -166,8 +165,7 @@ Trains XGBoost model on ``data`` using cross validation method ``cv``.
 
 
 def print_metrics(metrics, top_n_features=15):
-    print("\nXGBoost Baseline")
-    print(f"Total samples: {metrics['n_total']}")
+    print("\nXGBoost Metrics")
     print(f"Train samples: {metrics['n_train']}")
     print(f"Test samples: {metrics['n_test']}")
     print(f"Accuracy: {metrics['accuracy']:.3f}")
@@ -215,7 +213,7 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    data = appendicitis_pp(resolve_data_path(args.data))
+    data, descriptors = appendicitis_pp(Path.cwd() / '..' / 'data' / 'app_data.xlsx')
     # split 0.8 train 0.2 test just to make sure code runs
     X = data.drop(columns=['Class', 'Diagnosis', 'Diagnosis_Presumptive'])
     y = data['Diagnosis']
