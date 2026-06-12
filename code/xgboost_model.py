@@ -108,9 +108,64 @@ def train_xgboost_baseline(data_path, test_size=0.2, random_state=42):
     return model, metrics
 
 
+def train_xgboost(X_train, X_test, y_train, y_test, random_state:int = 42):
+    """
+Trains XGBoost model on ``data`` using cross validation method ``cv``.
+    :param X_train: Pandas dataframe containing data being used to train XGBoost model.
+    :param X_test: Pandas dataframe containing test or validation dataset
+    :param y_train: Pandas dataframe containing labels for training data.
+    :param y_test: Pandas dataframe containing labels for testing or validation data.
+    :param random_state: Random state to ensure reproducibility
+    :return: Model, metrics, and probabilites of appendicitis for test data
+    """
+
+    # Calculate positive:negative ratio for gradient scaling in xgboost
+    negative_count = (y_train == 0).sum()
+    positive_count = (y_train == 1).sum()
+    scale_pos_weight = negative_count / positive_count
+
+    feature_columns = X_train.columns.tolist()
+
+    model = XGBClassifier(
+        n_estimators=200,
+        max_depth=3,
+        learning_rate=0.05,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        objective="binary:logistic",
+        eval_metric="logloss",
+        scale_pos_weight=scale_pos_weight,
+        random_state=random_state,
+    )
+
+    model.fit(X_train, y_train)
+
+    y_pred = model.predict(X_test)
+    y_prob = model.predict_proba(X_test)[:, 1]
+
+    metrics = {
+        "n_train": len(X_train),
+        "n_test": len(X_test),
+        "accuracy": accuracy_score(y_test, y_pred),
+        "specificity": specificity_score(y_test, y_pred),
+        "roc_auc": roc_auc_score(y_test, y_prob),
+        "confusion_matrix": confusion_matrix(y_test, y_pred, labels=[0, 1]),
+        "classification_report": classification_report(
+            y_test,
+            y_pred,
+            target_names=["No appendicitis", "Appendicitis"],
+        ),
+        "feature_importance": pd.Series(
+            model.feature_importances_,
+            index=feature_columns,
+        ).sort_values(ascending=False),
+    }
+
+    return model, metrics, y_prob
+
+
 def print_metrics(metrics, top_n_features=15):
-    print("\nXGBoost Baseline")
-    print(f"Total samples: {metrics['n_total']}")
+    print("\nXGBoost Metrics")
     print(f"Train samples: {metrics['n_train']}")
     print(f"Test samples: {metrics['n_test']}")
     print(f"Accuracy: {metrics['accuracy']:.3f}")
@@ -158,9 +213,11 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    _, baseline_metrics = train_xgboost_baseline(
-        data_path=resolve_data_path(args.data),
-        test_size=args.test_size,
-        random_state=args.random_state,
-    )
+    data, descriptors = appendicitis_pp(Path.cwd() / '..' / 'data' / 'app_data.xlsx')
+    # split 0.8 train 0.2 test just to make sure code runs
+    X = data.drop(columns=['Class', 'Diagnosis', 'Diagnosis_Presumptive'])
+    y = data['Diagnosis']
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=args.test_size, random_state=args.random_state)
+    model, baseline_metrics, y_prob = train_xgboost(X_train, X_test, y_train, y_test, random_state=args.random_state)
     print_metrics(baseline_metrics)
+    print(y_prob)
